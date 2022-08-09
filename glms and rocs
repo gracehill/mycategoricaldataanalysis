@@ -1,0 +1,100 @@
+#import data
+library(kernlab)
+data(spam)
+charExclamation <- spam$charExclamation
+spamEmail <- 1*(spam$type == "spam")
+SpamData <- data.frame("spamEmail" = spamEmail,
+                       "charExclamation" = charExclamation)
+ #fitting logistic model
+ logitmod <- glm(spamEmail ~ charExclamation, family = binomial, data = SpamData)
+ summary(logitmod)     
+ 
+a_hat <- -0.9618
+b_hat <- 2.4452
+pr_at_x <- a_hat + b_hat*0.25
+vcov(logitmod)
+
+#Calculate Standard Error
+vara <- 0.001515699^2
+x2varb <- 0.0625*(0.013885091^2)
+cov <- 0.50*(-0.002504474^2)
+var <- vara + x2varb + cov
+stderr <- sqrt(var)
+se(logitmod)
+
+#95% confidence for the probability an email is spam when charExclamation = 0.25
+LB <- pr_at_x - qnorm(0.975)*stderr
+LB.p <- exp(LB)/(1+exp(LB))
+UB <- pr_at_x + qnorm(0.975)*stderr
+UB.p <- exp(UB)/(1+exp(UB))
+cbind(LB.p, UB.p)
+
+#The 99% CI for the odds that an email is spam when charExclamation = 0.1 is (0.8513595, 1.562287). We are 99% confident that for every 0.1% increase of characters that are “!”, the odds of the email being spam increase between 0.851 and 1.562.
+
+#Create a 99% confidence interval for the odds that an email is spam when charExclamation = 0.1. 
+L <- b_hat - qnorm(0.995)*(0.11784)
+U <- b_hat + qnorm(0.995)*(0.11784)
+el <- exp(L)
+eu <- exp(U)
+
+l<- 0.1*el
+u<- 0.1*eu
+
+cbind(el, eu)
+
+#The 99% CI for the odds that an email is spam when charExclamation = 0.1 is (0.8513595, 1.562287). We are 99% confident that for every 0.1% increase of characters that are “!”, the odds of the email being spam increase between 0.851 and 1.562.
+
+median_effective_level <- -a_hat/b_hat 
+median_effective_level
+
+#import crabs data 
+Crabs <- read.csv("C:/Users/ghill/OneDrive/Desktop/STA4504/Crabs.dat", sep="")
+
+#fit model that accounts for width and indicators for color
+width_color_model <- glm(y ~ width + factor(color), family = binomial, data = Crabs)
+summary(width_color_model)
+
+#fit model that also includes the three interaction terms between width and color
+interaction_model <- glm(y ~ width + factor(color) +width:factor(color), family = binomial, data = Crabs)
+summary(interaction_model)
+
+#test if interaction is significant with likelihood ratio test
+anova(width_color_model, interaction_model, test="LRT")
+pchisq(4.38, df=3, lower.tail = FALSE)
+
+#The simple model predicts y-hat=0 for 43 out of 62 cases where y=0, and predicts y-hat=1 for 36 out of 111 total cases. The model with the interaction term predicts y-hat=0 for 42 out of 62 cases, and y-hat=1 for 30 out of 111 cases where y=1.
+
+#predictive power of simple model 
+prop <- sum(Crabs$y)/nrow(Crabs)
+predicted_simple <- as.numeric(fitted(width_color_model) > prop)
+predicted_simple <- as.numeric(fitted(width_color_model) > prop)
+
+#predictive power of interaction model
+predicted_interaction <- as.numeric(fitted(interaction_model) > prop)
+
+xtabs(~ Crabs$y + predicted_simple)
+
+library(MASS)
+library(epiDisplay)
+
+#roc simple
+roc_simple <- lroc(width_color_model)
+roc_simple$auc
+
+#roc interaction
+roc_interaction <- lroc(interaction_model)
+roc_interaction$auc
+
+#The area under the ROC curve for the simple model is 0.771. The area under the ROC curve for the model with the interaction term is 0.781. This means that overall, predictive performance is very similar for both models.
+
+#overfitting may be an issue and the models may not be able to predict new data
+
+beta0 = 0.5
+beta1=c(0.1, 0.2, 0.3, 0.4, 0.5)
+n=c(25, 50, 100, 250, 500)
+x = rnorm(n)
+PIx = exp(beta0 + beta1*x) / (1 + exp(beta0 + beta1*x))
+Y = rbinom(n, 1, p=PIx)
+propY <- sum(Y)/n
+plot(beta1, propY)
+
